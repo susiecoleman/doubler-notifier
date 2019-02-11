@@ -1,7 +1,12 @@
 import * as functions from 'firebase-functions';
-import { dialogflow, Suggestions, RegisterUpdate } from 'actions-on-google';
 
-const app = dialogflow<{}, {}>({
+import { RegisterUpdate, Suggestions, dialogflow } from 'actions-on-google';
+
+interface UserData {
+  hasNotifications?: boolean;
+}
+
+const app = dialogflow<{}, UserData>({
   debug: true,
 });
 
@@ -10,9 +15,15 @@ app.intent('WelcomeIntent', conv => {
 });
 
 app.intent<{ num: number }>('doubler', (conv, { num }) => {
-  conv.ask(`${num} doubled is ${num * 2}.`);
-  conv.ask('Would you like a daily update?');
-  conv.ask(new Suggestions('Send daily', 'no'));
+  const response = `${num} doubled is ${num * 2}.`;
+  const subscribed = conv.user.storage.hasNotifications || false;
+  if (!subscribed) {
+    conv.ask(response);
+    conv.ask('Would you like a daily update?');
+    conv.ask(new Suggestions('Send daily', 'no'));
+  } else {
+    conv.close(response);
+  }
 });
 
 app.intent<{ num: string }>('setup_update', (conv, { num }) => {
@@ -29,6 +40,7 @@ app.intent<{}, { status: string }>(
   'finish_update_setup',
   (conv, params, registered) => {
     if (registered && registered.status === 'OK') {
+      conv.user.storage.hasNotifications = true;
       conv.close(`Ok, I'll start giving you daily updates.`);
     } else {
       conv.close(`Ok, I won't give you daily updates.`);
