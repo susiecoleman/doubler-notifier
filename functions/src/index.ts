@@ -16,7 +16,8 @@ app.intent('WelcomeIntent', conv => {
 
 app.intent<{ num: number }>('doubler', (conv, { num }) => {
   const response = `${num} doubled is ${num * 2}.`;
-  const subscribed = conv.user.storage.hasNotifications || false;
+  // const subscribed = conv.user.storage.hasNotifications || false;
+  const subscribed = false;
   if (!subscribed) {
     conv.ask(response);
     conv.ask('Would you like a daily update?');
